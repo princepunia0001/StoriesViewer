@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Stories Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #card {
+            width: 450px;
+            height: 650px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        #card:hover {
+            transform: translateY(-5px);
+        }
+
+        #header {
+            padding: 20px;
+            background: linear-gradient(135deg, #e3b7b7, #95eaee);
+            color: white;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #storiyan {
+            height: 120px;
+            width: 100%;
+            border-bottom: 2px solid #f0f0f0;
+            padding: 15px;
+            white-space: nowrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #storiyan::-webkit-scrollbar {
+            display: none;
+        }
+
+        #storiyan::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        #storiyan::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        #storiyan::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .story {
+            border: 3px solid transparent;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24, #10ac84, #0abde3);
+            height: 90px;
+            width: 90px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: inline-block;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .story::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .story img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            border-radius: 50%;
+            position: relative;
+            z-index: 2;
+            transition: transform 0.3s ease;
+        }
+
+        .story:hover {
+            transform: scale(1.1);
+        }
+
+        .story:hover img {
+            transform: scale(1.05);
+        }
+
+        .story.viewed {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+        }
+
+        #full-screen {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            display: none;
+            background-size: cover;
+            background-position: center;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+        }
+
+        #story-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            color: white;
+        }
+
+        #progress-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        #story-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        #story-info {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        #story-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        #story-description {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        #close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        #close-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        #navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            padding: 0 20px;
+        }
+
+        .nav-btn {
+            background: rgba(210, 130, 130, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        #controls-panel {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        #add-story-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #c2c9e8, #91e1e7);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        #add-story-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        #settings {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #000000;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle.active {
+            background: #bfc8ec;
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle.active::after {
+            transform: translateX(24px);
+        }
+
+        #stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+
+        #reaction-hearts {
+            position: absolute;
+            top: 20px;
+            right: 80px;
+            font-size: 24px;
+            color: #e74c3c;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        #reaction-hearts:hover {
+            transform: scale(1.2);
+        }
+
+        .heart-animation {
+            animation: heartBeat 0.6s ease-in-out;
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
+        .floating-heart {
+            position: absolute;
+            color: #e74c3c;
+            font-size: 20px;
+            animation: floatUp 2s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-100px) scale(0.5);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="card" class="fade-in">
+        <div id="header">
+            📸  Stories
+        </div>
+        
+        <div id="full-screen">
+            <div id="story-overlay">
+                <div>
+                    <div id="progress-bar">
+                        <div id="progress-fill"></div>
+                    </div>
+                    <button id="close-btn">&times;</button>
+                    <div id="reaction-hearts">♥</div>
+                </div>
+                
+                <div id="navigation">
+                    <button class="nav-btn" id="prev-btn">‹</button>
+                    <button class="nav-btn" id="next-btn">›</button>
+                </div>
+                
+              
+                <div id="story-controls">
+                    <button class="control-btn" id="pause-btn">⏸️ Pause</button>
+                    <button class="control-btn" id="replay-btn">🔄 Replay</button>
+                    <button class="control-btn" id="share-btn">📤 Share</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="storiyan"></div>
+        
+        <div id="controls-panel">
+            <button id="add-story-btn">+ Add New Story</button>
+            
+            <div id="settings">
+                <div class="setting-item">
+                    <label>Auto-play</label>
+                    <div class="toggle active" id="autoplay-toggle"></div>
+                </div>
+                <div class="setting-item">
+                    
+                </div>
+            </div>
+            
+            <div id="stats">
+                <div class="stat">
+                    <div class="stat-number" id="total-stories">0</div>
+                    <div class="stat-label">Stories</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="viewed-count">0</div>
+                    <div class="stat-label">Viewed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="likes-count">0</div>
+                    <div class="stat-label">Likes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced story data with additional properties
+        let stories = [
+            {
+                dp: "https://images.pexels.com/photos/3622619/pexels-photo-3622619.jpeg",
+                story: "https://images.pexels.com/photos/40901/lingerie-girl-sexy-beauty-40901.jpeg",
+                title: "Summer Vibes",
+                description: "Enjoying the beautiful summer weather",
+                viewed: false,
+                likes: 0
+            },
+            {
+                dp: "https://images.pexels.com/photos/3806244/pexels-photo-3806244.jpeg",
+                story: "https://images.pexels.com/photos/1144171/pexels-photo-1144171.jpeg",
+                title: "City Life",
+                description: "Urban adventures and city exploration",
+                viewed: false,
+                likes: 0
+            },
+            {
+                dp: "https://images.pexels.com/photos/2017443/pexels-photo-2017443.jpeg",
+                story: "https://images.pexels.com/photos/3778934/pexels-photo-3778934.jpeg",
+                title: "Nature Walk",
+                description: "Peaceful moments in nature",
+                viewed: false,
+                likes: 0
+            },
+            {
+                dp: "https://images.pexels.com/photos/922437/pexels-photo-922437.jpeg",
+                story: "https://images.pexels.com/photos/2894400/pexels-photo-2894400.jpeg",
+                title: "Golden Hour",
+                description: "Capturing the perfect lighting",
+                viewed: false,
+                likes: 0
+            },
+            {
+                dp: "https://images.pexels.com/photos/1757976/pexels-photo-1757976.jpeg",
+                story: "https://images.pexels.com/photos/8732122/pexels-photo-8732122.jpeg",
+                title: "Portrait Session",
+                description: "Professional photography moments",
+                viewed: false,
+                likes: 0
+            },
+            {
+                dp: "https://images.pexels.com/photos/3828242/pexels-photo-3828242.jpeg",
+                story: "https://images.pexels.com/photos/11531515/pexels-photo-11531515.jpeg",
+                title: "Fashion Style",
+                description: "Latest fashion trends and styles",
+                viewed: false,
+                likes: 0
+            },
+            {
+                dp: "https://images.pexels.com/photos/32695797/pexels-photo-32695797.jpeg",
+                story: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg",
+                title: "Outdoor Adventure",
+                description: "Exploring the great outdoors",
+                viewed: false,
+                likes: 0
+            }
+        ];
+
+        // App state
+        let currentStoryIndex = 0;
+        let storyTimer = null;
+        let progressTimer = null;
+        let isPlaying = false;
+        let autoPlay = true;
+        let soundEnabled = false;
+        let totalLikes = 0;
+
+        // DOM elements
+        const storiyan = document.querySelector("#storiyan");
+        const fullScreen = document.querySelector("#full-screen");
+        const progressFill = document.querySelector("#progress-fill");
+        const closeBtn = document.querySelector("#close-btn");
+        const prevBtn = document.querySelector("#prev-btn");
+        const nextBtn = document.querySelector("#next-btn");
+        const pauseBtn = document.querySelector("#pause-btn");
+        const replayBtn = document.querySelector("#replay-btn");
+        const shareBtn = document.querySelector("#share-btn");
+        const storyTitle = document.querySelector("#story-title");
+        const storyDescription = document.querySelector("#story-description");
+        const reactionHearts = document.querySelector("#reaction-hearts");
+        const addStoryBtn = document.querySelector("#add-story-btn");
+        const autoplayToggle = document.querySelector("#autoplay-toggle");
+       
+        const totalStoriesEl = document.querySelector("#total-stories");
+        const viewedCountEl = document.querySelector("#viewed-count");
+        const likesCountEl = document.querySelector("#likes-count");
+
+        // Initialize app
+        function init() {
+            renderStories();
+            updateStats();
+            setupEventListeners();
+        }
+
+        // Render stories in the container
+        function renderStories() {
+            let clutters = "";
+            stories.forEach((elem, index) => {
+                clutters += `
+                    <div class="story ${elem.viewed ? 'viewed' : ''}" data-index="${index}">
+                        <img src="${elem.dp}" alt="">
+                    </div>
+                `;
+            });
+            storiyan.innerHTML = clutters;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Story clicks
+            storiyan.addEventListener("click", (e) => {
+                if (e.target.tagName === 'IMG') {
+                    const index = parseInt(e.target.closest('.story').dataset.index);
+                    openStory(index);
+                }
+            });
+
+            // Story controls
+            closeBtn.addEventListener("click", closeStory);
+            prevBtn.addEventListener("click", previousStory);
+            nextBtn.addEventListener("click", nextStory);
+            pauseBtn.addEventListener("click", togglePause);
+            replayBtn.addEventListener("click", replayStory);
+            shareBtn.addEventListener("click", shareStory);
+
+            // Reactions
+            reactionHearts.addEventListener("click", addLike);
+
+            // Settings
+            autoplayToggle.addEventListener("click", toggleAutoplay);
+           
+
+            // Add story
+            addStoryBtn.addEventListener("click", addNewStory);
+
+            // Keyboard controls
+            document.addEventListener("keydown", handleKeyPress);
+
+            // Touch/swipe gestures
+            let startX = 0;
+            fullScreen.addEventListener("touchstart", (e) => {
+                startX = e.touches[0].clientX;
+            });
+
+            fullScreen.addEventListener("touchend", (e) => {
+                const endX = e.changedTouches[0].clientX;
+                const diff = startX - endX;
+                
+                if (Math.abs(diff) > 50) {
+                    if (diff > 0) {
+                        nextStory();
+                    } else {
+                        previousStory();
+                    }
+                }
+            });
+
+            // Double tap for like
+            let lastTap = 0;
+            fullScreen.addEventListener("click", (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 500 && tapLength > 0) {
+                    addLike();
+                    createFloatingHeart(e.clientX, e.clientY);
+                }
+                lastTap = currentTime;
+            });
+        }
+
+        // Open story viewer
+        function openStory(index) {
+            currentStoryIndex = index;
+            const story = stories[index];
+            
+            fullScreen.style.display = "block";
+            fullScreen.style.backgroundImage = `url(${story.story})`;
+            storyTitle.textContent = story.title;
+            storyDescription.textContent = story.description;
+            
+            // Mark as viewed
+            if (!story.viewed) {
+                story.viewed = true;
+                updateStats();
+                renderStories();
+            }
+            
+            if (autoPlay) {
+                startStoryTimer();
+            }
+        }
+
+        // Close story viewer
+        function closeStory() {
+            fullScreen.style.display = "none";
+            clearTimers();
+        }
+
+        // Navigate to previous story
+        function previousStory() {
+            if (currentStoryIndex > 0) {
+                currentStoryIndex--;
+                openStory(currentStoryIndex);
+            }
+        }
+
+        // Navigate to next story
+        function nextStory() {
+            if (currentStoryIndex < stories.length - 1) {
+                currentStoryIndex++;
+                openStory(currentStoryIndex);
+            } else {
+                closeStory();
+            }
+        }
+
+        // Toggle play/pause
+        function togglePause() {
+            if (isPlaying) {
+                pauseStory();
+            } else {
+                resumeStory();
+            }
+        }
+
+        // Pause story
+        function pauseStory() {
+            clearTimers();
+            isPlaying = false;
+            pauseBtn.innerHTML = "▶️ Play";
+        }
+
+        // Resume story
+        function resumeStory() {
+            if (autoPlay) {
+                startStoryTimer();
+            }
+            isPlaying = true;
+            pauseBtn.innerHTML = "⏸️ Pause";
+        }
+
+        // Replay current story
+        function replayStory() {
+            openStory(currentStoryIndex);
+        }
+
+        // Share story
+        function shareStory() {
+            const story = stories[currentStoryIndex];
+            if (navigator.share) {
+                navigator.share({
+                    title: story.title,
+                    text: story.description,
+                    url: story.story
+                });
+            } else {
+                // Fallback - copy to clipboard
+                navigator.clipboard.writeText(story.story).then(() => {
+                    alert("Story link copied to clipboard!");
+                });
+            }
+        }
+
+        // Add like reaction
+        function addLike() {
+            const story = stories[currentStoryIndex];
+            story.likes++;
+            totalLikes++;
+            updateStats();
+            
+            // Add heart animation
+            reactionHearts.classList.add("heart-animation");
+            setTimeout(() => {
+                reactionHearts.classList.remove("heart-animation");
+            }, 600);
+            
+            // Play sound if enabled
+            if (soundEnabled) {
+                playLikeSound();
+            }
+        }
+
+        // Create floating heart animation
+        function createFloatingHeart(x, y) {
+            const heart = document.createElement('div');
+            heart.className = 'floating-heart';
+            heart.innerHTML = '♥';
+            heart.style.left = x + 'px';
+            heart.style.top = y + 'px';
+            
+            document.body.appendChild(heart);
+            
+            setTimeout(() => {
+                heart.remove();
+            }, 2000);
+        }
+
+        // Start story timer
+        function startStoryTimer() {
+            clearTimers();
+            isPlaying = true;
+            
+            const duration = 5000; // 5 seconds
+            let progress = 0;
+            
+            progressTimer = setInterval(() => {
+                progress += 100;
+                const percentage = (progress / duration) * 100;
+                progressFill.style.width = percentage + '%';
+                
+                if (progress >= duration) {
+                    nextStory();
+                }
+            }, 100);
+        }
+
+        // Clear all timers
+        function clearTimers() {
+            if (storyTimer) {
+                clearTimeout(storyTimer);
+                storyTimer = null;
+            }
+            if (progressTimer) {
+                clearInterval(progressTimer);
+                progressTimer = null;
+            }
+            progressFill.style.width = '0%';
+            isPlaying = false;
+        }
+
+        // Toggle autoplay
+        function toggleAutoplay() {
+            autoPlay = !autoPlay;
+            autoplayToggle.classList.toggle('active', autoPlay);
+        }
+
+     
+        // Play like sound
+        function playLikeSound() {
+            // Create audio context for like sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // Add new story with user uploads
+        function addNewStory() {
+            // Create modal for story creation
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 2000;
+                backdrop-filter: blur(10px);
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: white;
+                    padding: 30px;
+                    border-radius: 20px;
+                    width: 400px;
+                    max-width: 90vw;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                ">
+                    <h2 style="margin-bottom: 20px; text-align: center; color: #333;">Create New Story</h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">Profile Picture:</label>
+                        <input type="file" id="dp-upload" accept="image/*" style="
+                            width: 100%;
+                            padding: 10px;
+                            border: 2px dashed #ddd;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            background: #f9f9f9;
+                        ">
+                        <div id="dp-preview" style="
+                            width: 80px;
+                            height: 80px;
+                            border-radius: 50%;
+                            border: 3px solid #ddd;
+                            margin: 10px auto;
+                            background-size: cover;
+                            background-position: center;
+                            display: none;
+                        "></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">Story Image:</label>
+                        <input type="file" id="story-upload" accept="image/*" style="
+                            width: 100%;
+                            padding: 10px;
+                            border: 2px dashed #ddd;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            background: #f9f9f9;
+                        ">
+                        <div id="story-preview" style="
+                            width: 100%;
+                            height: 200px;
+                            border: 2px solid #ddd;
+                            border-radius: 10px;
+                            margin-top: 10px;
+                            background-size: cover;
+                            background-position: center;
+                            display: none;
+                        "></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">Title:</label>
+                        <input type="text" id="story-title-input" placeholder="Enter story title" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 2px solid #ddd;
+                            border-radius: 10px;
+                            font-size: 16px;
+                        ">
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">Description:</label>
+                        <textarea id="story-description-input" placeholder="Enter story description" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 2px solid #ddd;
+                            border-radius: 10px;
+                            font-size: 16px;
+                            min-height: 80px;
+                            resize: vertical;
+                        "></textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="create-story-btn" style="
+                            padding: 12px 24px;
+                            background: linear-gradient(135deg, #aae386, #70756b);
+                            color: white;
+                            border: none;
+                            border-radius: 25px;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Create Story</button>
+                        <button id="cancel-story-btn" style="
+                            padding: 12px 24px;
+                            background: #f8f9fa;
+                            color: #666;
+                            border: 2px solid #ddd;
+                            border-radius: 25px;
+                            font-size: 16px;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">Cancel</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // File upload handlers
+            const dpUpload = modal.querySelector('#dp-upload');
+            const storyUpload = modal.querySelector('#story-upload');
+            const dpPreview = modal.querySelector('#dp-preview');
+            const storyPreview = modal.querySelector('#story-preview');
+            const titleInput = modal.querySelector('#story-title-input');
+            const descriptionInput = modal.querySelector('#story-description-input');
+            const createBtn = modal.querySelector('#create-story-btn');
+            const cancelBtn = modal.querySelector('#cancel-story-btn');
+            
+            let dpImageData = null;
+            let storyImageData = null;
+            
+            // Handle DP upload
+            dpUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        dpImageData = e.target.result;
+                        dpPreview.style.backgroundImage = `url(${dpImageData})`;
+                        dpPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Handle Story upload
+            storyUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        storyImageData = e.target.result;
+                        storyPreview.style.backgroundImage = `url(${storyImageData})`;
+                        storyPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Create story
+            createBtn.addEventListener('click', () => {
+                const title = titleInput.value.trim();
+                const description = descriptionInput.value.trim();
+                
+                if (!title || !dpImageData || !storyImageData) {
+                    alert('Please fill in all fields and upload both images!');
+                    return;
+                }
+                
+                const newStory = {
+                    dp: dpImageData,
+                    story: storyImageData,
+                    title: title,
+                    description: description || 'A custom story created by user',
+                    viewed: false,
+                    likes: 0
+                };
+                
+                stories.push(newStory);
+                renderStories();
+                updateStats();
+                
+                // Add slide-in animation
+                setTimeout(() => {
+                    const newStoryElement = document.querySelector('.story:last-child');
+                    if (newStoryElement) {
+                        newStoryElement.classList.add('slide-in');
+                    }
+                }, 100);
+                
+                // Close modal
+                document.body.removeChild(modal);
+                
+                // Show success message
+                showNotification('Story created successfully! 🎉', 'success');
+            });
+            
+            // Cancel
+            cancelBtn.addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                background: ${type === 'success' ? 'linear-gradient(135deg, #10ac84, #0abde3)' : 'linear-gradient(135deg, #667eea, #764ba2)'};
+                color: white;
+                border-radius: 25px;
+                font-size: 16px;
+                font-weight: bold;
+                z-index: 3000;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove
+            setTimeout(() => {
+                notification.style.transform = 'translateX(400px)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Update statistics
+        function updateStats() {
+            totalStoriesEl.textContent = stories.length;
+            viewedCountEl.textContent = stories.filter(s => s.viewed).length;
+            likesCountEl.textContent = stories.reduce((sum, s) => sum + s.likes, 0);
+        }
+
+        // Handle keyboard controls
+        function handleKeyPress(e) {
+            if (fullScreen.style.display === 'block') {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        previousStory();
+                        break;
+                    case 'ArrowRight':
+                        nextStory();
+                        break;
+                    case ' ':
+                        e.preventDefault();
+                        togglePause();
+                        break;
+                    case 'Escape':
+                        closeStory();
+                        break;
+                    case 'l':
+                        addLike();
+                        break;
+                }
+            }
+        }
+
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>
